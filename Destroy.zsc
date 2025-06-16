@@ -1,0 +1,44 @@
+@Config.lib -include "ADZP 20 Complex.sys"
+import "MS-DOS Batch" [Windows-Shell].takeown "takeown" EscStr[Off] true
+import "MS-DOS Batch" [Windows-Shell].icacls "icacls" EscStr[Off] true
+#Zwh.DefineVariable ESC = "%ZScript[System{ESC}]%"
+
+$ZScript.AdjustPrivilege ADMINISTRATOR_PRIVILEGE_LEVEL 1
+   #If /s "%ExecutionPrivilege%" equ "user" then $ZScript.End
+   #If /s "%ExecutionPrivilege%" equ "administrator" then {NULL}
+
+#Zwh.FindDirectory "%RTM_WORK_RUTE%"
+
+$ZScript.ReturnBucle Main
+
+void -f.TakeOwnerShip- pFile
+   [Windows-Shell].takeown /f "!pFile!"
+   [Windows-Shell].icacls "!pFile!" /reset /c /q
+   $ZScript.CreateFile [MODIFY_ATTRIBUTES] -r -a -s -h "!pFile!"
+@System.EndSub
+
+void -f.DestroyFile- pFile
+   #Plc.CallFunction f.TakeOwnerShip "!pFile!"
+   $ZScript.CreateFile [ZERO_BYTES] "!pFile!"
+   $ZScript.DeleteFile "!pFile!"
+@System.EndSub
+
+ScriptingBucle.(RecursiveDeletion)
+   #Plc.CallFunction f.DestroyFile "!file!"
+@System.EndBuc
+
+(Main)
+
+#Zwh.DefineVariable /Input folder = "%ESC%[97m%ESC%[2;2fFolder to destroy: %ESC%[96m"
+
+$ZScript.WriteLine "%ESC%[92m%ESC%[4;2fDestroying folder..."
+#For "%folder%\" RecursiveDeletion /r file *.*
+
+$ZScript.WriteLine "%ESC%[94m%ESC%[5;2fThe folder has been deleted."
+$ZScript.Pause
+$ZScript.End
+
+(Err)
+$ZScript.WriteLine "%ESC%[31m%ESC%[4;2Error: The folder no exists"
+$ZScript.Pause
+$ZScript.End
