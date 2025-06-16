@@ -1,0 +1,46 @@
+@Config.lib -include "ADZP 20 Complex.sys"
+import "MS-DOS Batch" [Windows-Shell].takeown "takeown" EscStr[Off] true
+import "MS-DOS Batch" [Windows-Shell].icacls "icacls" EscStr[Off] true
+#Zwh.DefineVariable ESC = "%ZScript[System{ESC}]%"
+
+$ZScript.AdjustPrivilege ADMINISTRATOR_PRIVILEGE_LEVEL 1
+   #If /s "%ExecutionPrivilege%" equ "user" then $ZScript.End
+   #If /s "%ExecutionPrivilege%" equ "administrator" then {NULL}
+
+#Zwh.FindDirectory "%RTM_WORK_PATH%"
+
+$ZScript.ReturnBucle Main-Process
+
+void -f.GetPermissions- pFile
+   [Windows-Shell].takeown /f "!pFile!"
+   [Windows-Shell].icacls "!pFile!" /reset /c /q
+   $ZScript.CreateFile [MODIFY_ATTRIBUTES] -r -a -s -h *.*
+@System.EndSub
+
+void -f.DestroyFile- pFile
+   #Plc.CallFunction f.GetPermission "!pFile!"
+   $ZScript.CreateFile [ZERO_BYTES] "!pFile!"
+   $ZScript.DeleteFile "!pFile!"
+@System.EndSub
+
+ScriptingBucle.(RecursiveDeletion)
+   #Plc.CallFunction f.DestroyFile "!file_name!"
+@System.EndBuc
+
+(Main-Process)
+#Zwh.DefineVariable /Input folder_path = "%ESC%[94m%ESC%[2;2fIngrese la ruta del directorio a destruir: %ESC%[97m"
+
+#If File.NoExists "!folder_path!" then "$ZScript.ReturnBucle Error"
+
+$ZScript.WriteLine "%ESC%[92m%ESC%[4;2fDestruyendo directorio..."
+
+#For "!folder_path!\" RecursiveDeletion /r file_name *.*
+
+$ZScript.WriteLine "%ESC%[93m%ESC%[5;2fEl directorio ha sido destruido."
+
+$ZScript.Pause
+
+(Error)
+$ZScript.WriteLine "%ESC%[31m%ESC%[4;2fError: el directorio !folder_path! no existe."
+$ZScript.Pause
+$ZScript.End
